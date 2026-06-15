@@ -1,0 +1,1 @@
+Replace with actual azan.mp3 in this raw folder: android/app/src/main/res/raw/azan.mp3

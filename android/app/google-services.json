@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "493674212824",
+    "project_id": "nmaz-reminder",
+    "storage_bucket": "nmaz-reminder.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:493674212824:android:a941faedc94434c91f96ad",
+        "android_client_info": {
+          "package_name": "com.nmaz.reminder"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCH0wWZ7_K8h-7kIWv6O68TBUY1o-AEEUM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
