@@ -35,18 +35,47 @@ class AuthController {
   }
 
   Future<UserCredential> registerEmail(
-    String name,
-    String email,
-    String password,
-  ) async {
-    final svc = ref.read(authServiceProvider);
-    final cred = await svc.registerWithEmail(email, password);
-    final repo = ref.read(authRepositoryProvider);
-    final appUser = AppUser(uid: cred.user!.uid, name: name, email: email);
-    await repo.createUserIfNotExists(appUser);
-    return cred;
+      String name,
+      String email,
+      String password,
+      ) async {
+    try {
+      final svc = ref.read(authServiceProvider);
+
+      final cred = await svc.registerWithEmail(email, password);
+
+      final repo = ref.read(authRepositoryProvider);
+
+      final appUser = AppUser(
+        uid: cred.user!.uid,
+        name: name,
+        email: email,
+      );
+
+      await repo.createUserIfNotExists(appUser);
+
+      return cred;
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_firebaseErrorMessage(e));
+    } catch (e) {
+      throw Exception('Registration failed: $e');
+    }
   }
 
+  String _firebaseErrorMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'email-already-in-use':
+        return 'This email is already registered.';
+      case 'invalid-email':
+        return 'Please enter a valid email.';
+      case 'weak-password':
+        return 'Password is too weak.';
+      case 'network-request-failed':
+        return 'Check your internet connection.';
+      default:
+        return e.message ?? 'Something went wrong.';
+    }
+  }
   Future<void> signOut() async {
     final svc = ref.read(authServiceProvider);
     await svc.signOut();
