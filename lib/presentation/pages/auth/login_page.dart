@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/app_utils.dart';
 import '../../../core/theme.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/app_ui.dart';
+import '../auth_gate.dart';
 import 'register_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -31,19 +33,66 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
-      await ref.read(authControllerProvider).signInEmail(
+      final credential = await ref.read(authControllerProvider).signInEmail(
             _emailCtl.text.trim(),
             _passCtl.text,
           );
+      if (!mounted) return;
+      final user = credential.user;
+      if (user != null && needsEmailVerification(user)) {
+        await ref.read(authControllerProvider).sendEmailVerification();
+        if (!mounted) return;
+        await _showEmailVerificationDialog();
+        return;
+      }
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AuthGate()),
+        (_) => false,
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Sign in failed. Check your details and try again.')),
+      AppSnackBar.showError(
+        context,
+        e,
+        fallback: 'Sign in failed. Check your details and try again.',
       );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _showEmailVerificationDialog() async {
+    final verified = await AppDialogs.showEmailVerification(
+      context,
+      email: _emailCtl.text.trim(),
+    );
+
+    if (!verified) {
+      await ref.read(authControllerProvider).signOut();
+      if (!mounted) return;
+      AppSnackBar.show(
+        context,
+        'Please verify your email. We sent a verification email to your inbox.',
+      );
+      return;
+    }
+
+    final user = await ref.read(authControllerProvider).reloadCurrentUser();
+    if (!mounted) return;
+    if (user != null && !needsEmailVerification(user)) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AuthGate()),
+        (_) => false,
+      );
+      return;
+    }
+
+    await ref.read(authControllerProvider).signOut();
+    if (!mounted) return;
+    AppSnackBar.show(
+      context,
+      'Email is not verified yet. Please verify your email and sign in again.',
+    );
   }
 
   @override

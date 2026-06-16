@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/notification_ids.dart';
 import '../../../core/notification_service.dart';
 import '../models/prayer_model.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../prayer_repository.dart';
 
@@ -32,17 +31,6 @@ final markPrayerProvider = Provider((ref) {
         followup: true,
       );
       await NotificationService.cancel(followId);
-    } catch (_) {}
-    // mark followup cancelled in Firestore so other devices / server won't send alerts
-    try {
-      final db = FirebaseFirestore.instance;
-      final docId = '${date}_$prayerName';
-      final ref =
-          db.collection('users').doc(uid).collection('followups').doc(docId);
-      await ref.set({
-        'cancelled': true,
-        'cancelledAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
     } catch (_) {}
   };
 });

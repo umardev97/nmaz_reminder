@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../core/styles.dart';
+import '../../core/app_utils.dart';
 import '../../features/auth/providers/auth_provider.dart';
+import '../../features/intention/models/daily_intention.dart';
+import '../../features/intention/providers/intention_provider.dart';
 import '../../features/prayer/providers/prayer_provider.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/app_ui.dart';
@@ -71,6 +74,10 @@ class _DashboardView extends ConsumerWidget {
     final appUser = ref.watch(appUserProvider).asData?.value;
     final prayer =
         user == null ? null : ref.watch(todayPrayerProvider(user.uid));
+    final intention = ref.watch(todayIntentionProvider);
+    final completion = user == null
+        ? null
+        : ref.watch(todayIntentionCompletionProvider(user.uid));
     final firstName = (appUser?.name.trim().isNotEmpty ?? false)
         ? appUser!.name.trim().split(' ').first
         : 'there';
@@ -256,39 +263,42 @@ class _DashboardView extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: 28),
-                PremiumCard(
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: .1),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Icon(Icons.lightbulb_outline_rounded,
-                            color: AppColors.primary),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('A small daily intention',
-                                style: Theme.of(context).textTheme.titleMedium),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Consistency grows through gentle, repeatable steps.',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                intention.when(
+                  data: (item) => _DailyIntentionCard(
+                    intention: item,
+                    completed: completion?.asData?.value?.completed ?? false,
+                    loading: completion?.isLoading ?? false,
+                    onChanged: user == null
+                        ? null
+                        : (completed) async {
+                            try {
+                              await ref.read(setIntentionCompletionProvider)(
+                                user.uid,
+                                completed,
+                              );
+                              if (context.mounted) {
+                                AppSnackBar.showSuccess(
+                                  context,
+                                  completed
+                                      ? 'Daily intention completed'
+                                      : 'Daily intention marked incomplete',
+                                );
+                              }
+                            } catch (e) {
+                              if (!context.mounted) return;
+                              AppSnackBar.showError(
+                                context,
+                                e,
+                                fallback:
+                                    'Could not update today’s intention. Please try again.',
+                              );
+                            }
+                          },
                   ),
+                  loading: () => const PremiumCard(
+                    child: AppLoadingView(message: 'Loading daily intention'),
+                  ),
+                  error: (_, __) => const SizedBox.shrink(),
                 ),
               ],
             ),
@@ -303,6 +313,99 @@ class _DashboardView extends ConsumerWidget {
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';
+  }
+}
+
+class _DailyIntentionCard extends StatelessWidget {
+  const _DailyIntentionCard({
+    required this.intention,
+    required this.completed,
+    required this.loading,
+    required this.onChanged,
+  });
+
+  final DailyIntention? intention;
+  final bool completed;
+  final bool loading;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final quote = intention?.quote;
+    final message = intention?.message;
+
+    return PremiumCard(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: .1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              completed
+                  ? Icons.task_alt_rounded
+                  : Icons.lightbulb_outline_rounded,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'A small daily intention',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  quote?.trim().isNotEmpty == true
+                      ? quote!.trim()
+                      : 'Consistency grows through gentle, repeatable steps.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  message?.trim().isNotEmpty == true
+                      ? message!.trim()
+                      : 'Complete one small meaningful action today.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Complete'),
+                      selected: completed,
+                      onSelected: loading || onChanged == null
+                          ? null
+                          : (_) => onChanged!(true),
+                    ),
+                    ChoiceChip(
+                      label: const Text('Not yet'),
+                      selected: !completed,
+                      onSelected: loading || onChanged == null
+                          ? null
+                          : (_) => onChanged!(false),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

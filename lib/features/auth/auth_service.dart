@@ -5,7 +5,7 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
 
-  Stream<User?> authStateChanges() => _auth.authStateChanges();
+  Stream<User?> userChanges() => _auth.userChanges();
 
   Future<UserCredential> signInWithEmail(String email, String password) async {
     return await _auth.signInWithEmailAndPassword(
@@ -22,6 +22,19 @@ class AuthService {
       email: email,
       password: password,
     );
+  }
+
+  Future<void> sendEmailVerification() async {
+    await _auth.currentUser?.sendEmailVerification();
+  }
+
+  Future<User?> reloadCurrentUser() async {
+    await _auth.currentUser?.reload();
+    return _auth.currentUser;
+  }
+
+  Future<void> deleteCurrentUser() async {
+    await _auth.currentUser?.delete();
   }
 
   Future<void> signOut() async {

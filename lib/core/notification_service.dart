@@ -53,11 +53,11 @@ class NotificationService {
       channelDescription: 'Prayer time reminders',
       importance: Importance.max,
       priority: Priority.high,
-      sound: RawResourceAndroidNotificationSound('azan'),
+      sound: RawResourceAndroidNotificationSound('assets/sounds/azan.mp3'),
     );
 
     const ios = DarwinNotificationDetails(
-      sound: 'azan.mp3',
+      sound: 'assets/sounds/azan.mp3',
     );
 
     return const NotificationDetails(

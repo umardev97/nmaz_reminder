@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/app_utils.dart';
 import '../../../core/theme.dart';
 import '../../../core/styles.dart';
 import '../../../features/auth/providers/auth_provider.dart';
@@ -68,14 +69,13 @@ class _PrayerPageState extends ConsumerState<PrayerPage> {
       await ref.read(markPrayerProvider)(uid, date, key);
       ref.invalidate(todayPrayerProvider(uid));
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$label marked as complete')),
-      );
-    } catch (_) {
+      AppSnackBar.showSuccess(context, '$label marked as complete');
+    } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Could not update this prayer. Please try again.')),
+      AppSnackBar.showError(
+        context,
+        e,
+        fallback: 'Could not update this prayer. Please try again.',
       );
     } finally {
       if (mounted) setState(() => _marking = null);

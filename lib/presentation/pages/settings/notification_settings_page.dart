@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/app_error.dart';
+import '../../../core/app_utils.dart';
 import '../../../core/notification_service.dart';
 import '../../../core/theme.dart';
 import '../../../features/auth/providers/auth_provider.dart';
@@ -37,9 +39,14 @@ class _NotificationSettingsPageState
     try {
       final pref = await SettingsRepository().getReminderEnabled(user.uid);
       if (mounted) setState(() => _enabled = pref);
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() => _error = 'Your preferences could not be loaded.');
+        setState(
+          () => _error = userMessageFromError(
+            e,
+            fallback: 'Your preferences could not be loaded.',
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -61,18 +68,17 @@ class _NotificationSettingsPageState
         await NotificationService.cancelAll();
       }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(value
-                ? 'Prayer reminders are on'
-                : 'Prayer reminders are off')),
+      AppSnackBar.showSuccess(
+        context,
+        value ? 'Prayer reminders are on' : 'Prayer reminders are off',
       );
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _enabled = !value);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Could not update reminders. Please try again.')),
+      AppSnackBar.showError(
+        context,
+        e,
+        fallback: 'Could not update reminders. Please try again.',
       );
     } finally {
       if (mounted) setState(() => _saving = false);

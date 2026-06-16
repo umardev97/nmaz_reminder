@@ -21,3 +21,9 @@ final saveReportProvider = Provider((ref) {
     await repo.saveReport(uid, r);
   };
 });
+
+final reportsStreamProvider =
+    StreamProvider.autoDispose.family<List<DailyReport>, String>((ref, uid) {
+  final repo = ref.watch(reportRepositoryProvider);
+  return repo.streamReports(uid);
+});

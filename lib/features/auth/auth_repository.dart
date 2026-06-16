@@ -18,8 +18,42 @@ class AuthRepository {
     return AppUser.fromMap({...doc.data()!, 'uid': doc.id});
   }
 
-  Future<void> saveFcmToken(String uid, String token) async {
-    final ref = _db.collection('users').doc(uid).collection('fcm').doc(token);
-    await ref.set({'token': token, 'createdAt': FieldValue.serverTimestamp()});
+  Future<void> deleteUserData(String uid) async {
+    await _deleteCollection(_db.collection('users').doc(uid).collection('fcm'));
+    await _deleteCollection(
+      _db.collection('users').doc(uid).collection('settings'),
+    );
+    await _deleteCollection(
+      _db.collection('users').doc(uid).collection('followups'),
+    );
+    await _deleteCollection(
+      _db.collection('users').doc(uid).collection('intentions'),
+    );
+    await _deleteCollection(
+      _db.collection('prayers').doc(uid).collection('dates'),
+    );
+    await _deleteCollection(
+      _db.collection('reports').doc(uid).collection('dates'),
+    );
+
+    final batch = _db.batch();
+    batch.delete(_db.collection('users').doc(uid));
+    await batch.commit();
+  }
+
+  Future<void> _deleteCollection(
+    CollectionReference<Map<String, dynamic>> collection,
+  ) async {
+    const pageSize = 300;
+    while (true) {
+      final snapshot = await collection.limit(pageSize).get();
+      if (snapshot.docs.isEmpty) return;
+
+      final batch = _db.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
   }
 }

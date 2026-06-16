@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../../core/notification_ids.dart';
@@ -67,29 +66,6 @@ final prayerNotificationController = Provider((ref) {
         "Reminder: ${mapping[key]} not marked yet.",
         followScheduled,
       );
-
-      // persist follow-up metadata so other devices / server can act accordingly
-      try {
-        final db = FirebaseFirestore.instance;
-        final docId = '${date}_$key';
-        await db
-            .collection('users')
-            .doc(uid)
-            .collection('followups')
-            .doc(docId)
-            .set({
-          'mainId': mainId,
-          'followId': followId,
-          'prayer': key,
-          'date': date,
-          'scheduledAt': scheduled.toIso8601String(),
-          'followScheduledAt': followScheduled.toIso8601String(),
-          'cancelled': false,
-          'createdAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      } catch (e) {
-        // ignore persistence errors locally
-      }
     }
   }
 

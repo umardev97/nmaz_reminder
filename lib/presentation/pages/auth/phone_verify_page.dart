@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/app_utils.dart';
 import '../../../core/theme.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../widgets/app_logo.dart';
@@ -29,16 +30,17 @@ class _PhoneVerifyPageState extends ConsumerState<PhoneVerifyPage> {
     if (_codeCtl.text.trim().length < 6) return;
     setState(() => _loading = true);
     try {
-      await ref.read(authServiceProvider).signInWithSmsCode(
+      await ref.read(authControllerProvider).verifySmsCode(
             widget.verificationId,
             _codeCtl.text.trim(),
           );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('That code was not accepted. Please try again.')),
+      AppSnackBar.showError(
+        context,
+        e,
+        fallback: 'That code was not accepted. Please try again.',
       );
     } finally {
       if (mounted) setState(() => _loading = false);

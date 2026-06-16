@@ -29,11 +29,12 @@ service cloud.firestore {
 
     // prayers structure: /prayers/{uid}/dates/{dateId}
     match /prayers/{userId}/dates/{dateId} {
-      allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin())
-        && request.resource.data.keys().hasAll(['date']) ;
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
 
       // Optional: ensure prayer boolean fields are booleans when present
       allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin()) &&
+        request.resource.data.keys().hasAll(['date']) &&
         (!('fajr' in request.resource.data) || request.resource.data.fajr is bool) &&
         (!('dhuhr' in request.resource.data) || request.resource.data.dhuhr is bool) &&
         (!('asr' in request.resource.data) || request.resource.data.asr is bool) &&
@@ -44,6 +45,7 @@ service cloud.firestore {
     // reports structure: /reports/{uid}/dates/{dateId}
     match /reports/{userId}/dates/{dateId} {
       allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     // followups metadata stored under users/{uid}/followups/{id}
@@ -52,7 +54,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       // allow marking cancelled by owner or admin
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow delete: if isSignedIn() && isAdmin();
+      allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     // fcm tokens under users/{uid}/fcm/{tokenId}
@@ -65,6 +67,17 @@ service cloud.firestore {
     // settings under users/{uid}/settings/{doc}
     match /users/{userId}/settings/{doc} {
       allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // daily intentions are created by admins and read by signed-in users.
+    match /dailyIntentions/{dateId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // each user can mark their own daily intention complete or incomplete.
+    match /users/{userId}/intentions/{dateId} {
+      allow read, write, delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     // default deny

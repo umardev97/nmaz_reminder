@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/app_utils.dart';
 import '../../../core/theme.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/report/models/report_model.dart';
 import '../../../features/report/providers/report_provider.dart';
 import '../../widgets/app_ui.dart';
+import 'reflections_page.dart';
 
 class ReportPage extends ConsumerStatefulWidget {
   const ReportPage({super.key, this.embedded = false});
@@ -46,6 +48,16 @@ class _ReportPageState extends ConsumerState<ReportPage> {
       appBar: AppBar(
         automaticallyImplyLeading: !widget.embedded,
         title: const Text('Daily reflection'),
+        actions: [
+          IconButton(
+            tooltip: 'My reflections',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ReflectionsPage()),
+            ),
+            icon: const Icon(Icons.history_edu_rounded),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SingleChildScrollView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -116,6 +128,17 @@ class _ReportPageState extends ConsumerState<ReportPage> {
                       ?.copyWith(color: AppColors.textSecondary),
                 ),
               ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ReflectionsPage()),
+                  ),
+                  icon: const Icon(Icons.history_edu_rounded),
+                  label: const Text('View my reflections'),
+                ),
+              ),
             ],
           ),
         ),
@@ -135,9 +158,10 @@ class _ReportPageState extends ConsumerState<ReportPage> {
     );
     try {
       await ref.read(saveReportProvider)(uid, report);
+      ref.invalidate(reportsStreamProvider(uid));
+      ref.invalidate(todayReportProvider(uid));
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Today’s reflection has been saved')));
+      AppSnackBar.showSuccess(context, 'Today’s reflection has been saved');
       if (widget.embedded) {
         _visited.clear();
         _work.clear();
@@ -147,10 +171,13 @@ class _ReportPageState extends ConsumerState<ReportPage> {
       } else {
         Navigator.of(context).pop();
       }
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Could not save your reflection. Please try again.')));
+      AppSnackBar.showError(
+        context,
+        e,
+        fallback: 'Could not save your reflection. Please try again.',
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
