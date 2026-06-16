@@ -3,6 +3,8 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tzdata;
 
+import 'constants.dart';
+
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -27,7 +29,8 @@ class NotificationService {
     await androidImpl?.requestNotificationsPermission();
     await androidImpl?.requestExactAlarmsPermission();
 
-    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    final androidInit =
+        AndroidInitializationSettings(AppConstants.androidLauncherIcon);
 
     const iosInit = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -35,7 +38,7 @@ class NotificationService {
       requestSoundPermission: true,
     );
 
-    const settings = InitializationSettings(
+    final InitializationSettings settings = InitializationSettings(
       android: androidInit,
       iOS: iosInit,
     );
@@ -47,20 +50,20 @@ class NotificationService {
 
   /// Common notification details
   static NotificationDetails _details() {
-    const android = AndroidNotificationDetails(
-      'prayer_chan',
-      'Prayer Notifications',
-      channelDescription: 'Prayer time reminders',
+    final android = AndroidNotificationDetails(
+      AppConstants.prayerNotificationChannelId,
+      AppConstants.prayerNotificationChannelName,
+      channelDescription: AppConstants.prayerNotificationChannelDescription,
       importance: Importance.max,
       priority: Priority.high,
-      sound: RawResourceAndroidNotificationSound('assets/sounds/azan.mp3'),
+      sound: RawResourceAndroidNotificationSound(AppConstants.azanSoundPath),
     );
 
-    const ios = DarwinNotificationDetails(
-      sound: 'assets/sounds/azan.mp3',
+    final ios = DarwinNotificationDetails(
+      sound: AppConstants.azanSoundFileName,
     );
 
-    return const NotificationDetails(
+    return NotificationDetails(
       android: android,
       iOS: ios,
     );
@@ -68,14 +71,11 @@ class NotificationService {
 
   /// Immediate notification
   static Future<void> showImmediate(
-    int id,
-    String title,
-    String body,
   ) async {
     await _plugin.show(
-      id: id,
-      title: title,
-      body: body,
+      id: 1,
+      title: "Nmaz Reminder",
+      body: 'This is a test notification. Your reminders are ready.',
       notificationDetails: _details(),
     );
   }

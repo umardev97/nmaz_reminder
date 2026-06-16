@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 
@@ -34,10 +35,18 @@ final prayerNotificationController = Provider((ref) {
 
     for (final key in mapping.keys) {
       final raw = times[key]?.split(' ')[0] ?? '';
+
+      debugPrint('[$key] Raw prayer time from API: $raw');
+
       final parts = raw.split(':');
-      if (parts.length < 2) continue;
+      if (parts.length < 2) {
+        debugPrint('[$key] Invalid time format. Skipping.');
+        continue;
+      }
+
       final hour = int.tryParse(parts[0]) ?? 0;
       final minute = int.tryParse(parts[1]) ?? 0;
+
       final scheduled = tz.TZDateTime(
         tz.local,
         today.year,
@@ -50,7 +59,10 @@ final prayerNotificationController = Provider((ref) {
       final mainId = makeNotificationId(uid, date, key, followup: false);
       final followId = makeNotificationId(uid, date, key, followup: true);
 
-      // schedule main daily notification
+      debugPrint('Scheduling ${mapping[key]} main notification');
+      debugPrint('Main ID: $mainId');
+      debugPrint('Main scheduled time: $scheduled');
+
       await NotificationService.scheduleDaily(
         mainId,
         '${mapping[key]} Prayer',
@@ -58,14 +70,22 @@ final prayerNotificationController = Provider((ref) {
         scheduled,
       );
 
-      // schedule daily follow-up X minutes after prayer time
+      debugPrint('${mapping[key]} main notification scheduled successfully');
+
       final followScheduled = scheduled.add(Duration(minutes: followupMinutes));
+
+      debugPrint('Scheduling ${mapping[key]} follow-up notification');
+      debugPrint('Follow-up ID: $followId');
+      debugPrint('Follow-up scheduled time: $followScheduled');
+
       await NotificationService.scheduleDaily(
         followId,
         '${mapping[key]} Reminder',
         "Reminder: ${mapping[key]} not marked yet.",
         followScheduled,
       );
+
+      debugPrint('${mapping[key]} follow-up notification scheduled successfully');
     }
   }
 

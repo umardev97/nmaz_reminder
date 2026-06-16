@@ -31,6 +31,9 @@ class _NotificationSettingsPageState
   }
 
   Future<void> _load() async {
+
+  //  NotificationService.showImmediate();
+
     final user = ref.read(firebaseUserProvider).asData?.value;
     if (user == null) {
       if (mounted) setState(() => _loading = false);
@@ -64,6 +67,7 @@ class _NotificationSettingsPageState
       await SettingsRepository().setReminderEnabled(user.uid, value);
       if (value) {
         await ref.read(defaultPrayerScheduler)();
+
       } else {
         await NotificationService.cancelAll();
       }

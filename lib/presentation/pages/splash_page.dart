@@ -58,7 +58,7 @@ class _SplashPageState extends State<SplashPage>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const AppLogo(height: 210),
+                      const AppLogo(height: 210,compact: true,),
                       const SizedBox(height: 24),
                       Text(
                         'Prayer, presence, progress.',
