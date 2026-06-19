@@ -474,23 +474,46 @@ class _DailyIntentionCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  quote?.trim().isNotEmpty == true
-                      ? quote!.trim()
-                      : 'Consistency grows through gentle, repeatable steps.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  message?.trim().isNotEmpty == true
-                      ? message!.trim()
-                      : 'Complete one small meaningful action today.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Quote',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      quote?.trim().isNotEmpty == true
+                          ? quote!.trim()
+                          : 'Consistency grows through gentle, repeatable steps.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.background,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Text(
+                      'Message',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message?.trim().isNotEmpty == true
+                          ? message!.trim()
+                          : 'Complete one small meaningful action today.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.background,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 Wrap(

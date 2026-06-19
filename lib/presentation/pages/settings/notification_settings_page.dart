@@ -5,7 +5,6 @@ import '../../../core/app_utils.dart';
 import '../../../core/notification_service.dart';
 import '../../../core/theme.dart';
 import '../../../features/auth/providers/auth_provider.dart';
-import '../../../features/auth/settings_repository.dart';
 import '../../../features/prayer/providers/prayer_notification_provider.dart';
 import '../../widgets/app_ui.dart';
 
@@ -31,8 +30,7 @@ class _NotificationSettingsPageState
   }
 
   Future<void> _load() async {
-
-  //  NotificationService.showImmediate();
+    //  NotificationService.showImmediate();
 
     final user = ref.read(firebaseUserProvider).asData?.value;
     if (user == null) {
@@ -40,7 +38,9 @@ class _NotificationSettingsPageState
       return;
     }
     try {
-      final pref = await SettingsRepository().getReminderEnabled(user.uid);
+      final pref = await ref
+          .read(settingsRepositoryProvider)
+          .getReminderEnabled(user.uid);
       if (mounted) setState(() => _enabled = pref);
     } catch (e) {
       if (mounted) {
@@ -64,10 +64,11 @@ class _NotificationSettingsPageState
       _saving = true;
     });
     try {
-      await SettingsRepository().setReminderEnabled(user.uid, value);
+      await ref
+          .read(settingsRepositoryProvider)
+          .setReminderEnabled(user.uid, value);
       if (value) {
         await ref.read(defaultPrayerScheduler)();
-
       } else {
         await NotificationService.cancelAll();
       }

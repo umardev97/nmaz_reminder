@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../../core/app_utils.dart';
-import '../../../core/theme.dart';
-import '../../../core/styles.dart';
 import '../../../features/admin/providers/admin_provider.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/intention/models/daily_intention.dart';
 import '../../../features/intention/providers/intention_provider.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/app_ui.dart';
+import 'tabs/admin_dashboard_tab.dart';
+import 'tabs/admin_intentions_tab.dart';
+import 'tabs/admin_users_tab.dart';
+import 'widgets/admin_user_activity_sheet.dart';
 
 class AdminDashboard extends ConsumerStatefulWidget {
   const AdminDashboard({super.key});
@@ -24,7 +27,12 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
   final _dateCtl = TextEditingController(
     text: DateFormat('yyyy-MM-dd').format(DateTime.now()),
   );
+
+  DateTime _activityDate = DateTime.now();
+  int _selectedIndex = 0;
   bool _saving = false;
+
+  String get _activityDateId => DateFormat('yyyy-MM-dd').format(_activityDate);
 
   @override
   void dispose() {
@@ -64,6 +72,29 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
     }
   }
 
+  Future<void> _pickIntentionDate() async {
+    final initial = DateTime.tryParse(_dateCtl.text.trim()) ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked == null || !mounted) return;
+    _dateCtl.text = DateFormat('yyyy-MM-dd').format(picked);
+  }
+
+  Future<void> _pickActivityDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _activityDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _activityDate = picked);
+  }
+
   Future<void> _confirmSignOut() async {
     final confirmed = await AppDialogs.confirm(
       context,
@@ -85,16 +116,28 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
     }
   }
 
+  void _showUserDetails(Map<String, dynamic> user) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => AdminUserActivitySheet(
+        user: user,
+        date: _activityDateId,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final usersAsync = ref.watch(allUsersStreamProvider);
     return Scaffold(
       appBar: AppBar(
-        title: Row(
+        title: const Row(
           children: [
-            const AppLogo(height: 42, compact: true),
-            const SizedBox(width: 12),
-            const Text('Admin'),
+            AppLogo(height: 42, compact: true),
+            SizedBox(width: 12),
+            Text('Admin'),
           ],
         ),
         actions: [
@@ -109,123 +152,29 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
       body: usersAsync.when(
         data: (users) {
           final admins = users.where((user) => user['role'] == 'admin').length;
-          return CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: AppPage(
-                  maxWidth: 900,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Community overview',
-                          style: Theme.of(context).textTheme.headlineMedium),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Manage members and keep an eye on account access.',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyLarge
-                            ?.copyWith(color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: 24),
-                      _IntentionAdminCard(
-                        dateController: _dateCtl,
-                        quoteController: _quoteCtl,
-                        messageController: _messageCtl,
-                        saving: _saving,
-                        onSave: _saveIntention,
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          Expanded(
-                              child: _StatCard(
-                                  value: '${users.length}',
-                                  label: 'Members',
-                                  icon: Icons.people_alt_outlined)),
-                          const SizedBox(width: 12),
-                          Expanded(
-                              child: _StatCard(
-                                  value: '$admins',
-                                  label: 'Admins',
-                                  icon: Icons.admin_panel_settings_outlined)),
-                        ],
-                      ),
-                      const SizedBox(height: 28),
-                      const SectionHeader(title: 'All members'),
-                      const SizedBox(height: 12),
-                    ],
-                  ),
-                ),
+          final members =
+              users.where((user) => user['role'] != 'admin').toList();
+          return IndexedStack(
+            index: _selectedIndex,
+            children: [
+              AdminDashboardTab(
+                memberCount: members.length,
+                adminCount: admins,
+                dateController: _dateCtl,
+                quoteController: _quoteCtl,
+                messageController: _messageCtl,
+                saving: _saving,
+                onPickDate: _pickIntentionDate,
+                onSave: _saveIntention,
               ),
-              if (users.isEmpty)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: AppStateView(
-                    title: 'No members yet',
-                    message: 'New member accounts will appear here.',
-                    showLogo: true,
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-                  sliver: SliverList.separated(
-                    itemCount: users.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final user = users[index];
-                      final name = (user['name'] as String?)?.trim();
-                      final email = user['email'] as String?;
-                      final role = user['role'] as String? ?? 'user';
-                      return Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 860),
-                          child: PremiumCard(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: CircleAvatar(
-                                backgroundColor:
-                                    AppColors.primary.withValues(alpha: .12),
-                                foregroundColor: AppColors.primary,
-                                child: Text(_initials(name ?? email ?? 'M')),
-                              ),
-                              title: Text(
-                                  name?.isNotEmpty == true
-                                      ? name!
-                                      : 'Unnamed member',
-                                  style:
-                                      Theme.of(context).textTheme.titleMedium),
-                              subtitle: Text(email ?? 'No email added',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                          color: AppColors.textSecondary)),
-                              trailing: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: role == 'admin'
-                                      ? AppColors.primary.withValues(alpha: .1)
-                                      : AppColors.surfaceMuted,
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.pill),
-                                ),
-                                child: Text(
-                                    role == 'admin' ? 'Admin' : 'Member',
-                                    style:
-                                        Theme.of(context).textTheme.labelSmall),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+              AdminUsersTab(
+                members: members,
+                activityDate: _activityDate,
+                activityDateId: _activityDateId,
+                onPickActivityDate: _pickActivityDate,
+                onShowUserDetails: _showUserDetails,
+              ),
+              const AdminIntentionsTab(),
             ],
           );
         },
@@ -236,121 +185,27 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
           icon: Icons.cloud_off_rounded,
         ),
       ),
-    );
-  }
-
-  static String _initials(String value) {
-    final words = value.trim().split(RegExp(r'\s+'));
-    return words
-        .take(2)
-        .map((word) => word.isEmpty ? '' : word[0].toUpperCase())
-        .join();
-  }
-}
-
-class _IntentionAdminCard extends StatelessWidget {
-  const _IntentionAdminCard({
-    required this.dateController,
-    required this.quoteController,
-    required this.messageController,
-    required this.saving,
-    required this.onSave,
-  });
-
-  final TextEditingController dateController;
-  final TextEditingController quoteController;
-  final TextEditingController messageController;
-  final bool saving;
-  final VoidCallback onSave;
-
-  @override
-  Widget build(BuildContext context) {
-    return PremiumCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Daily intention',
-            style: Theme.of(context).textTheme.titleLarge,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) {
+          setState(() => _selectedIndex = index);
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard_rounded),
+            label: 'Dashboard',
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Set the quote and message users will complete today.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+          NavigationDestination(
+            icon: Icon(Icons.people_alt_outlined),
+            selectedIcon: Icon(Icons.people_alt_rounded),
+            label: 'Users',
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: dateController,
-            decoration: const InputDecoration(
-              labelText: 'Date',
-              prefixIcon: Icon(Icons.event_outlined),
-            ),
+          NavigationDestination(
+            icon: Icon(Icons.format_quote_outlined),
+            selectedIcon: Icon(Icons.format_quote_rounded),
+            label: 'Intentions',
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: quoteController,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Quote',
-              prefixIcon: Icon(Icons.format_quote_rounded),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: messageController,
-            minLines: 2,
-            maxLines: 3,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Task message',
-              alignLabelWithHint: true,
-              prefixIcon: Icon(Icons.task_alt_rounded),
-            ),
-          ),
-          const SizedBox(height: 16),
-          FullWidthButton(
-            label: 'Save daily intention',
-            icon: Icons.save_outlined,
-            loading: saving,
-            onPressed: onSave,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard(
-      {required this.value, required this.label, required this.icon});
-  final String value;
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-          gradient: AppGradients.premium,
-          borderRadius: BorderRadius.circular(AppRadius.md)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: AppColors.accent),
-          const SizedBox(height: 18),
-          Text(value,
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineMedium
-                  ?.copyWith(color: Colors.white)),
-          Text(label,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: Colors.white70)),
         ],
       ),
     );

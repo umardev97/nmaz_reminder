@@ -1,14 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timezone/timezone.dart' as tz;
 
 import '../../../core/notification_ids.dart';
 import '../../../core/notification_service.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../auth/settings_repository.dart';
 import '../default_location.dart';
 import '../prayer_time_service.dart';
 
 final prayerTimeServiceProvider = Provider((ref) => PrayerTimeService());
+final settingsRepositoryProvider =
+    Provider<ReminderSettingsStore>((ref) => SettingsRepository());
+final _autoScheduledPrayerKeysProvider = Provider((ref) => <String>{});
 
 final prayerNotificationController = Provider((ref) {
   final pts = ref.watch(prayerTimeServiceProvider);
@@ -47,14 +50,7 @@ final prayerNotificationController = Provider((ref) {
       final hour = int.tryParse(parts[0]) ?? 0;
       final minute = int.tryParse(parts[1]) ?? 0;
 
-      final scheduled = tz.TZDateTime(
-        tz.local,
-        today.year,
-        today.month,
-        today.day,
-        hour,
-        minute,
-      );
+      final scheduled = NotificationService.scheduledDailyAt(hour, minute);
 
       final mainId = makeNotificationId(uid, date, key, followup: false);
       final followId = makeNotificationId(uid, date, key, followup: true);
@@ -85,7 +81,8 @@ final prayerNotificationController = Provider((ref) {
         followScheduled,
       );
 
-      debugPrint('${mapping[key]} follow-up notification scheduled successfully');
+      debugPrint(
+          '${mapping[key]} follow-up notification scheduled successfully');
     }
   }
 
@@ -103,5 +100,30 @@ final defaultPrayerScheduler = Provider((ref) {
       DefaultLocation.latitude,
       DefaultLocation.longitude,
     );
+  };
+});
+
+final autoSchedulePrayerRemindersProvider = Provider((ref) {
+  final settingsRepository = ref.watch(settingsRepositoryProvider);
+  final scheduleDefaultPrayers = ref.watch(defaultPrayerScheduler);
+
+  return (String uid) async {
+    final today = DateTime.now();
+    final scheduleKey =
+        '$uid-${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    final scheduledKeys = ref.read(_autoScheduledPrayerKeysProvider);
+    if (scheduledKeys.contains(scheduleKey)) return;
+
+    final remindersEnabled = await settingsRepository.getReminderEnabled(uid);
+    if (!remindersEnabled) return;
+
+    scheduledKeys.add(scheduleKey);
+    try {
+      await scheduleDefaultPrayers();
+    } catch (_) {
+      scheduledKeys.remove(scheduleKey);
+      rethrow;
+    }
   };
 });

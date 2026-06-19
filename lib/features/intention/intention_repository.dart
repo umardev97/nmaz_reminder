@@ -21,6 +21,19 @@ class IntentionRepository {
     });
   }
 
+  Stream<List<DailyIntention>> streamAllIntentions() {
+    return _db
+        .collection('dailyIntentions')
+        .orderBy('date', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) =>
+                  DailyIntention.fromMap({...doc.data(), 'date': doc.id}))
+              .toList(),
+        );
+  }
+
   Stream<IntentionCompletion?> streamCompletion(String uid, String date) {
     return _completionRef(uid, date).snapshots().map((doc) {
       if (!doc.exists) return null;

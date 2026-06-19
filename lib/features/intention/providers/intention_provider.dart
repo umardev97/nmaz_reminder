@@ -15,6 +15,13 @@ final todayIntentionProvider = StreamProvider.autoDispose<DailyIntention?>((
   return repo.streamIntention(todayDateId());
 });
 
+final allIntentionsProvider = StreamProvider.autoDispose<List<DailyIntention>>((
+  ref,
+) {
+  final repo = ref.watch(intentionRepositoryProvider);
+  return repo.streamAllIntentions();
+});
+
 final todayIntentionCompletionProvider =
     StreamProvider.autoDispose.family<IntentionCompletion?, String>((ref, uid) {
   final repo = ref.watch(intentionRepositoryProvider);

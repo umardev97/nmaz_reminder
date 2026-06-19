@@ -71,11 +71,14 @@ class NotificationService {
 
   /// Immediate notification
   static Future<void> showImmediate(
+    int id,
+    String title,
+    String body,
   ) async {
     await _plugin.show(
-      id: 1,
-      title: "Nmaz Reminder",
-      body: 'This is a test notification. Your reminders are ready.',
+      id: id,
+      title: title,
+      body: body,
       notificationDetails: _details(),
     );
   }

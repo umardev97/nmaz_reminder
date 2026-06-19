@@ -50,8 +50,7 @@ void main() {
 
       for (int i = 1; i < times.length; i++) {
         expect(times[i].isAfter(times[i - 1]), true,
-            reason:
-                '${times[i]} should be after ${times[i - 1]}');
+            reason: '${times[i]} should be after ${times[i - 1]}');
       }
     });
 
@@ -112,7 +111,6 @@ void main() {
 
       for (int id in ids) {
         expect(id > 0, true);
-        expect(id is int, true);
       }
     });
 
@@ -126,7 +124,7 @@ void main() {
       };
 
       for (final time in prayerTimes.values) {
-        expect(time.contains(':'), true, reason: 'Should contain \":\"');
+        expect(time.contains(':'), true, reason: 'Should contain ":"');
         expect(time.contains('('), true, reason: 'Should contain timezone');
 
         final parts = time.split(' ')[0].split(':');
@@ -179,8 +177,7 @@ void main() {
       expect(notificationDate.day, today.day);
     });
 
-    test(
-        'Verify: Notification for past time today is scheduled for tomorrow',
+    test('Verify: Notification for past time today is scheduled for tomorrow',
         () {
       final now = tz.TZDateTime.now(tz.local);
 

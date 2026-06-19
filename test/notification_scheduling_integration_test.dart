@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:nmaz_reminder/core/notification_ids.dart';
 import 'package:nmaz_reminder/core/notification_service.dart';
 
 void main() {
@@ -126,10 +127,13 @@ void main() {
 
     test('Multiple notification IDs are unique', () {
       final ids = <int>{};
+      const uid = 'notification-test-user';
+      const date = '2026-06-19';
+      const prayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-      for (int i = 0; i < 10; i++) {
-        final id = DateTime.now().hashCode + i;
-        ids.add(id);
+      for (final prayer in prayers) {
+        ids.add(makeNotificationId(uid, date, prayer, followup: false));
+        ids.add(makeNotificationId(uid, date, prayer, followup: true));
       }
 
       expect(ids.length, 10);
