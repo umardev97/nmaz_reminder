@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../intention/models/daily_intention.dart';
 import '../prayer/models/prayer_model.dart';
+import '../quran/models/quran_reading.dart';
 import '../report/models/report_model.dart';
 
 class AdminUserActivity {
@@ -11,6 +12,7 @@ class AdminUserActivity {
     required this.report,
     required this.intentionCompletion,
     required this.completedIntentions,
+    required this.quranReading,
   });
 
   final String date;
@@ -18,6 +20,7 @@ class AdminUserActivity {
   final DailyReport? report;
   final IntentionCompletion? intentionCompletion;
   final List<IntentionCompletion> completedIntentions;
+  final QuranReading? quranReading;
 }
 
 class AdminRepository {
@@ -35,27 +38,25 @@ class AdminRepository {
   }
 
   Future<AdminUserActivity> fetchUserActivity(String uid, String date) async {
-    final prayerFuture =
-        _db.collection('prayers').doc(uid).collection('dates').doc(date).get();
-    final reportFuture =
-        _db.collection('reports').doc(uid).collection('dates').doc(date).get();
-    final intentionFuture = _db
-        .collection('users')
-        .doc(uid)
-        .collection('intentions')
-        .doc(date)
-        .get();
-    final completedIntentionsFuture = _db
+    final results = await Future.wait([
+      _db.collection('prayers').doc(uid).collection('dates').doc(date).get(),
+      _db.collection('reports').doc(uid).collection('dates').doc(date).get(),
+      _db.collection('users').doc(uid).collection('intentions').doc(date).get(),
+      _db.collection('quran').doc(uid).collection('dates').doc(date).get(),
+    ]);
+
+    final completedIntentionsSnap = await _db
         .collection('users')
         .doc(uid)
         .collection('intentions')
         .where('completed', isEqualTo: true)
         .get();
 
-    final prayerDoc = await prayerFuture;
-    final reportDoc = await reportFuture;
-    final intentionDoc = await intentionFuture;
-    final completedIntentionsSnap = await completedIntentionsFuture;
+    final prayerDoc = results[0];
+    final reportDoc = results[1];
+    final intentionDoc = results[2];
+    final quranDoc = results[3];
+
     final completedIntentions = completedIntentionsSnap.docs
         .map((doc) =>
             IntentionCompletion.fromMap({...doc.data(), 'date': doc.id}))
@@ -70,6 +71,9 @@ class AdminRepository {
           ? IntentionCompletion.fromMap(intentionDoc.data()!)
           : null,
       completedIntentions: completedIntentions,
+      quranReading: quranDoc.exists
+          ? QuranReading.fromMap({...quranDoc.data()!, 'date': quranDoc.id})
+          : null,
     );
   }
 }

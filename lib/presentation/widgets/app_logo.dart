@@ -19,7 +19,7 @@ class AppLogo extends StatelessWidget {
             height: height,
             width: compact ? height : double.infinity,
             child: Image.asset(
-              'assets/images/nmaz reminder.jpeg',
+              'assets/images/nmaz_reminder.jpeg',
               fit: compact ? BoxFit.cover : BoxFit.contain,
               alignment: Alignment.center,
             ),

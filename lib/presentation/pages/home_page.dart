@@ -17,7 +17,6 @@ import 'dashboard/dashboard.dart';
 import 'prayer/prayer_page.dart';
 import 'profile/profile_page.dart';
 import 'report/report_page.dart';
-import 'settings/notification_settings_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});

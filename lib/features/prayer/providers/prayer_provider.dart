@@ -24,12 +24,7 @@ final markPrayerProvider = Provider((ref) {
     await repo.markPrayer(uid, date, prayerName, note: note);
     // cancel follow-up notification for this prayer
     try {
-      final followId = makeNotificationId(
-        uid,
-        date,
-        prayerName,
-        followup: true,
-      );
+      final followId = makeNotificationId(uid, prayerName, followup: true);
       await NotificationService.cancel(followId);
     } catch (_) {}
   };

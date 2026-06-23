@@ -10,11 +10,12 @@ import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/intention/models/daily_intention.dart';
 import '../../../features/intention/providers/intention_provider.dart';
 import '../../../features/prayer/providers/prayer_provider.dart';
+import '../../../features/quran/providers/quran_provider.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/app_ui.dart';
 import '../prayer/prayer_page.dart';
 import '../report/report_page.dart';
-import '../settings/notification_settings_page.dart';
+import '../settings/settings_page.dart';
 
 class DashboardView extends ConsumerWidget {
   const DashboardView({super.key});
@@ -29,6 +30,9 @@ class DashboardView extends ConsumerWidget {
     final completion = user == null
         ? null
         : ref.watch(todayIntentionCompletionProvider(user.uid));
+    final quranReading = user == null
+        ? null
+        : ref.watch(todayQuranReadingProvider(user.uid));
     final firstName = (appUser?.name.trim().isNotEmpty ?? false)
         ? appUser!.name.trim().split(' ').first
         : 'there';
@@ -93,7 +97,7 @@ class DashboardView extends ConsumerWidget {
                 tooltip: 'Notification settings',
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => const NotificationSettingsPage(),
+                    builder: (_) => const SettingsPage(),
                   ),
                 ),
                 icon: const Icon(Icons.notifications_none_rounded),
@@ -338,6 +342,38 @@ class DashboardView extends ConsumerWidget {
                   ),
                 ),
 
+                const SizedBox(height: 14),
+
+                _QuranReadingCard(
+                  reading: quranReading,
+                  onChanged: user == null
+                      ? null
+                      : (read) async {
+                          try {
+                            await ref.read(setQuranReadingProvider)(
+                              user.uid,
+                              read,
+                            );
+                            if (context.mounted) {
+                              AppSnackBar.showSuccess(
+                                context,
+                                read
+                                    ? 'Quran reading marked for today'
+                                    : 'Quran reading unmarked',
+                              );
+                            }
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            AppSnackBar.showError(
+                              context,
+                              e,
+                              fallback:
+                                  'Could not update Quran reading. Please try again.',
+                            );
+                          }
+                        },
+                ),
+
                 const SizedBox(height: 36),
               ],
             ),
@@ -530,6 +566,78 @@ class _DailyIntentionCard extends StatelessWidget {
                       label: const Text('Not yet'),
                       selected: !completed,
                       onSelected: loading || onChanged == null
+                          ? null
+                          : (_) => onChanged!(false),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuranReadingCard extends StatelessWidget {
+  const _QuranReadingCard({required this.reading, required this.onChanged});
+
+  final AsyncValue<dynamic>? reading;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isRead = reading?.asData?.value?.read == true;
+    final isLoading = reading?.isLoading ?? false;
+
+    return PremiumCard(
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: .1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              isRead ? Icons.menu_book_rounded : Icons.menu_book_outlined,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Quran recitation',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Did you read Quran Majeed today?',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Yes, I did'),
+                      selected: isRead,
+                      onSelected: isLoading || onChanged == null
+                          ? null
+                          : (_) => onChanged!(true),
+                    ),
+                    ChoiceChip(
+                      label: const Text('Not yet'),
+                      selected: !isRead,
+                      onSelected: isLoading || onChanged == null
                           ? null
                           : (_) => onChanged!(false),
                     ),

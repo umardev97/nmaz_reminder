@@ -34,10 +34,12 @@ class _AuthGateState extends ConsumerState<AuthGate> {
         final appUserAsync = ref.watch(appUserProvider);
         return appUserAsync.when(
           data: (appUser) {
-            if (appUser != null && appUser.role == 'admin') {
+            if (appUser?.role == 'admin') {
               return const AdminDashboard();
             }
-            if (needsEmailVerification(u)) return const OnboardingPage();
+            if (needsEmailVerification(u) && appUser?.role != 'admin') {
+              return const OnboardingPage();
+            }
             _schedulePrayerRemindersAfterLogin(u.uid);
             return const HomePage();
           },

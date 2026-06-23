@@ -40,6 +40,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       if (!mounted) return;
       final user = credential.user;
       if (user != null && needsEmailVerification(user)) {
+        // Admins bypass email verification — check role before blocking.
+        final appUser =
+            await ref.read(authRepositoryProvider).fetchUser(user.uid);
+        if (!mounted) return;
+        if (appUser?.role == 'admin') {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const AuthGate()),
+            (_) => false,
+          );
+          return;
+        }
         await ref.read(authControllerProvider).sendEmailVerification();
         if (!mounted) return;
         await _showEmailVerificationDialog();

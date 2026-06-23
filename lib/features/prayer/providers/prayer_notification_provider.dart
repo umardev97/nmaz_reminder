@@ -32,10 +32,6 @@ final prayerNotificationController = Provider((ref) {
       'isha': 'Isha',
     };
 
-    final today = DateTime.now();
-    final date =
-        '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-
     for (final key in mapping.keys) {
       final raw = times[key]?.split(' ')[0] ?? '';
 
@@ -52,8 +48,8 @@ final prayerNotificationController = Provider((ref) {
 
       final scheduled = NotificationService.scheduledDailyAt(hour, minute);
 
-      final mainId = makeNotificationId(uid, date, key, followup: false);
-      final followId = makeNotificationId(uid, date, key, followup: true);
+      final mainId = makeNotificationId(uid, key, followup: false);
+      final followId = makeNotificationId(uid, key, followup: true);
 
       debugPrint('Scheduling ${mapping[key]} main notification');
       debugPrint('Main ID: $mainId');

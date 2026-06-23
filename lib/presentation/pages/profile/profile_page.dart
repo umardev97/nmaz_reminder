@@ -6,7 +6,7 @@ import '../../../core/theme.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/app_ui.dart';
-import '../settings/notification_settings_page.dart';
+import '../settings/settings_page.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -92,25 +92,13 @@ class ProfilePage extends ConsumerWidget {
                 child: Column(
                   children: [
                     _ProfileTile(
-                      icon: Icons.notifications_none_rounded,
-                      title: 'Prayer reminders',
-                      subtitle: 'Schedule and notification preferences',
+                      icon: Icons.settings_outlined,
+                      title: 'Settings',
+                      subtitle: 'Notifications, location, and preferences',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
-                            builder: (_) => const NotificationSettingsPage()),
+                            builder: (_) => const SettingsPage()),
                       ),
-                    ),
-                    const Divider(height: 1),
-                    const _ProfileTile(
-                      icon: Icons.location_on_outlined,
-                      title: 'Prayer location',
-                      subtitle: 'Lahore, Pakistan',
-                    ),
-                    const Divider(height: 1),
-                    const _ProfileTile(
-                      icon: Icons.shield_outlined,
-                      title: 'Privacy and account',
-                      subtitle: 'Your activity stays connected to your account',
                     ),
                   ],
                 ),

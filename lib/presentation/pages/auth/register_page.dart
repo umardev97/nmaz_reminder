@@ -42,6 +42,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       if (!mounted) return;
       final user = credential.user;
       if (user != null && needsEmailVerification(user)) {
+        // Admins bypass email verification — check role before blocking.
+        final appUser =
+            await ref.read(authRepositoryProvider).fetchUser(user.uid);
+        if (!mounted) return;
+        if (appUser?.role == 'admin') {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const AuthGate()),
+            (_) => false,
+          );
+          return;
+        }
         await _showEmailVerificationDialog();
         return;
       }

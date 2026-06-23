@@ -128,12 +128,11 @@ void main() {
     test('Multiple notification IDs are unique', () {
       final ids = <int>{};
       const uid = 'notification-test-user';
-      const date = '2026-06-19';
       const prayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
       for (final prayer in prayers) {
-        ids.add(makeNotificationId(uid, date, prayer, followup: false));
-        ids.add(makeNotificationId(uid, date, prayer, followup: true));
+        ids.add(makeNotificationId(uid, prayer, followup: false));
+        ids.add(makeNotificationId(uid, prayer, followup: true));
       }
 
       expect(ids.length, 10);

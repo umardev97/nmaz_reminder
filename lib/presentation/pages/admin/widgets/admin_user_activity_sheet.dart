@@ -164,6 +164,19 @@ class _ActivityDetails extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         _ActivitySection(
+          title: 'Quran recitation',
+          icon: Icons.menu_book_outlined,
+          child: _DetailRow(
+            label: 'Read today',
+            value: activity.quranReading == null
+                ? 'No data'
+                : activity.quranReading!.read
+                    ? 'Yes'
+                    : 'Not yet',
+          ),
+        ),
+        const SizedBox(height: 14),
+        _ActivitySection(
           title: 'Daily intention',
           icon: Icons.task_alt_outlined,
           child: _DetailRow(
